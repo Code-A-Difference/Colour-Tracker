@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Definitive Assistive Color Engine</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            padding-bottom: 80px; /* Space so the footer button doesn't block content */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #121212;
+            color: #ffffff;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        p.subtitle {
+            color: #aaa;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        #video-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 4/3;
+            border: 4px solid #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #reticle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30px;
+            height: 30px;
+            transform: translate(-50%, -50%);
+            border: 3px dashed #ffffff;
+            box-shadow: 0 0 0 2px #000000;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        #scan-btn {
+            margin: 20px 0;
+            padding: 18px 40px;
+            font-size: 1.6rem;
+            font-weight: bold;
+            background-color: #e0a800;
+            color: #121212;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 4px 10px rgba(224, 168, 0, 0.3);
+            transition: transform 0.1s;
+        }
+
+        #scan-btn:active {
+            transform: scale(0.98);
+        }
+
+        #result-display {
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+            padding: 35px 20px;
+            text-align: center;
+            font-size: 2.2rem;
+            font-weight: 900;
+            border-radius: 12px;
+            border: 3px solid #333;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        /* --- STICKY BOTTOM FOOTER --- */
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #1a1a1a;
+            padding: 12px 0;
+            display: flex;
+            justify-content: center;
+            border-top: 1px solid #333;
+            z-index: 10;
+        }
+
+        #view-disclaimer-btn {
+            background: none;
+            border: 1px solid #777;
+            color: #aaa;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        #view-disclaimer-btn:hover {
+            color: #fff;
+            border-color: #fff;
+        }
+
+        /* --- ACCESSIBLE MODAL POP-UP SYSTEM --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background-color: #1e1e1e;
+            border: 2px solid #333;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 450px;
+            padding: 30px;
+            box-sizing: border-box;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: translateY(0);
+        }
+
+        .modal-title {
+            font-size: 1.4rem;
+            color: #ffc107;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-text {
+            color: #ddd;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        /* Initial Open Button */
+        #understand-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: #ffc107;
+            color: #121212;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #understand-btn:hover {
+            background-color: #e0a800;
+        }
+
+        /* Top-Right "X" Close Button */
+        #close-x-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.8rem;
+            cursor: pointer;
+            line-height: 1;
+            display: none; /* Controlled dynamically by JavaScript */
+        }
+
+        #close-x-btn:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Assistive Color Detector</h1>
+    <p class="subtitle">Boundary-Locked Vector Engine</p>
+    
+    <div id="video-container">
+        <video id="webcam" autoplay playsinline></video>
+        <div id="reticle"></div>
+    </div>
+
+    <button id="scan-btn">SCAN COLOR</button>
+    <div id="result-display">Target a color...</div>
+
+    <canvas id="hidden-canvas" style="display:none;"></canvas>
+
+    <footer>
+        <button id="view-disclaimer-btn">View Disclaimer</button>
+    </footer>
+
+    <div id="disclaimer-modal" class="modal-overlay">
+        <div class="modal-box">
+            <button id="close-x-btn" aria-label="Close disclaimer">&times;</button>
+            <h2 class="modal-title">⚠️ Ambient Light Notice</h2>
+            <p class="modal-text">
+                <strong>Please Note:</strong> This tool relies on your device’s camera stream to analyze colors. Real-world lighting conditions—such as bright sunlight, harsh indoor fluorescent bulbs, heavy shadows, or automatic camera white-balancing—can alter how colors appear on screen. For the most accurate and consistent results, please scan objects under flat, neutral, and well-lit conditions. This software is an assistive prototype and should not be used for critical applications where absolute color precision is required for safety.
+            </p>
+            <button id="understand-btn">I Understand</button>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const scanBtn = document.getElementById('scan-btn');
+        const resultDisplay = document.getElementById('result-display');
+        const canvas = document.getElementById('hidden-canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        // Modal Specific Elements
+        const modal = document.getElementById('disclaimer-modal');
+        const understandBtn = document.getElementById('understand-btn');
+        const closeXBtn = document.getElementById('close-x-btn');
+        const viewDisclaimerBtn = document.getElementById('view-disclaimer-btn');
+
+        // --- MODAL UTILITY CONTROLLERS ---
+
+        // 1. Force layout visible on initial page window load execution
+        window.addEventListener('load', () => {
+            // Configure layout state variant A: (Show "I Understand", Hide "X")
+            understandBtn.style.display = 'block';
+            closeXBtn.style.display = 'none';
+            modal.classList.add('active');
+        });
+
+        // 2. Action handler when user clicks "I Understand"
+        understandBtn.addEventListener('click', () => {
+            modal.classList.remove('active');
+            startCamera(); // Starts camera only AFTER they accept
+        });
+
+        // 3. Action handler when user clicks persistent bottom display footer button
+        viewDisclaimerBtn.addEventListener('click', () => {
+            // Configure layout state variant B: (Hide "I Understand", Show "X")
+            understandBtn.style.display = 'none';
+            closeXBtn.style.display = 'block';
+            modal.classList.add('active');
+        });
+
+        // 4. Action handler when user clicks the "X" button
+        closeXBtn.addEventListener('click', () => {
+            modal.classList.remove('active');
+        });
+
+
+        // --- CORE ANALYSIS SYSTEM ---
+
+        const COLOR_LIBRARY = [
+            { name: "Black", r: 12, g: 12, b: 12, isDark: true },
+            { name: "Very Dark Gray", r: 45, g: 45, b: 45, isDark: true },
+            { name: "Dark Gray", r: 85, g: 85, b: 85, isDark: true },
+            { name: "Gray", r: 128, g: 128, b: 128, isDark: false },
+            { name: "Light Gray", r: 175, g: 175, b: 175, isDark: false },
+            { name: "Very Light Gray", r: 215, g: 215, b: 215, isDark: false },
+            { name: "Off-White / Cream", r: 245, g: 242, b: 230, isDark: false },
+            { name: "White", r: 253, g: 253, b: 253, isDark: false },
+            { name: "Pale Pastel Pink", r: 250, g: 220, b: 225, isDark: false },
+            { name: "Light Pink", r: 255, g: 180, b: 192, isDark: false },
+            { name: "Pink", r: 255, g: 105, b: 180, isDark: false },
+            { name: "Hot Pink / Fuchsia", r: 240, g: 0, b: 130, isDark: false },
+            { name: "Muted Pink / Rose", r: 195, g: 130, b: 145, isDark: false },
+            { name: "Dark Red / Maroon", r: 95, g: 10, b: 15, isDark: true },
+            { name: "Red", r: 215, g: 25, b: 25, isDark: true },
+            { name: "Light Red / Coral", r: 245, g: 90, b: 80, isDark: false },
+            { name: "Dark Brown", r: 65, g: 35, b: 15, isDark: true },
+            { name: "Brown", r: 115, g: 70, b: 30, isDark: true },
+            { name: "Light Brown / Caramel", r: 160, g: 100, b: 50, isDark: false },
+            { name: "Beige / Khaki", r: 205, g: 192, b: 160, isDark: false },
+            { name: "Tan / Peach", r: 245, g: 185, b: 130, isDark: false },
+            { name: "Burnt Orange", r: 175, g: 65, b: 0, isDark: true },
+            { name: "Orange", r: 255, g: 110, b: 0, isDark: false },
+            { name: "Light Orange", r: 255, g: 160, b: 50, isDark: false },
+            { name: "Mustard Yellow", r: 190, g: 150, b: 25, isDark: false },
+            { name: "Yellow", r: 250, g: 215, b: 20, isDark: false },
+            { name: "Light Pale Yellow", r: 255, g: 245, b: 160, isDark: false },
+            { name: "Olive Green", r: 90, g: 100, b: 40, isDark: true },
+            { name: "Dark Green", r: 15, g: 75, b: 25, isDark: true },
+            { name: "Green", r: 30, g: 150, b: 50, isDark: true },
+            { name: "Sage Green / Muted Green", r: 135, g: 160, b: 135, isDark: false },
+            { name: "Lime Green", r: 125, g: 215, b: 30, isDark: false },
+            { name: "Light Green", r: 165, g: 240, b: 165, isDark: false },
+            { name: "Pale Mint Green", r: 215, g: 245, b: 225, isDark: false },
+            { name: "Dark Teal", r: 10, g: 80, b: 90, isDark: true },
+            { name: "Teal", r: 20, g: 135, b: 145, isDark: true },
+            { name: "Cyan / Aqua", r: 0, g: 195, b: 205, isDark: false },
+            { name: "Navy Blue", r: 15, g: 25, b: 80, isDark: true },
+            { name: "Deep Royal Blue", r: 10, g: 50, b: 170, isDark: true },
+            { name: "Blue", r: 30, g: 90, b: 215, isDark: true },
+            { name: "Slate Blue", r: 110, g: 140, b: 180, isDark: false },
+            { name: "Sky Blue", r: 115, g: 195, b: 245, isDark: false },
+            { name: "Ice Blue / Pale Blue", r: 215, g: 235, b: 250, isDark: false },
+            { name: "Indigo / Dark Purple", r: 55, g: 15, b: 105, isDark: true },
+            { name: "Purple", r: 125, g: 40, b: 185, isDark: true },
+            { name: "Lavender / Violet", r: 180, g: 135, b: 235, isDark: false },
+            { name: "Pale Lavender", r: 225, g: 210, b: 245, isDark: false },
+            { name: "Magenta / Plum", r: 190, g: 25, b: 140, isDark: false }
+        ];
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } }
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                resultDisplay.innerText = "Camera Error";
+            }
+        }
+
+        function sampleColor() {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const centerX = Math.floor(canvas.width / 2);
+                const centerY = Math.floor(canvas.height / 2);
+                
+                const sampleSize = 15;
+                const startX = centerX - Math.floor(sampleSize / 2);
+                const startY = centerY - Math.floor(sampleSize / 2);
+                
+                const imgData = ctx.getImageData(startX, startY, sampleSize, sampleSize).data;
+                
+                let totalR = 0, totalG = 0, totalB = 0;
+                let pixelCount = 0;
+
+                for (let i = 0; i < imgData.length; i += 4) {
+                    totalR += imgData[i];
+                    totalG += imgData[i + 1];
+                    totalB += imgData[i + 2];
+                    pixelCount++;
+                }
+
+                const avgR = Math.round(totalR / pixelCount);
+                const avgG = Math.round(totalG / pixelCount);
+                const avgB = Math.round(totalB / pixelCount);
+                
+                matchConstrainedColor(avgR, avgG, avgB);
+            }
+        }
+
+        function matchConstrainedColor(r, g, b) {
+            let closestColor = COLOR_LIBRARY[0];
+            let minimumDistance = Infinity;
+
+            const maxChan = Math.max(r, g, b);
+            const minChan = Math.min(r, g, b);
+            const chromaSpread = maxChan - minChan;
+
+            for (let i = 0; i < COLOR_LIBRARY.length; i++) {
+                const target = COLOR_LIBRARY[i];
+                
+                if ((target.name === "Beige / Khaki" || target.name === "Tan / Peach") && b >= g) {
+                    continue; 
+                }
+                if (target.name.includes("Pink") || target.name.includes("Rose")) {
+                    if (g > b + 10) continue; 
+                }
+
+                let rDiff = r - target.r;
+                let gDiff = g - target.g;
+                let bDiff = b - target.b;
+
+                let wR = 0.30;
+                let wG = 0.59;
+                let wB = 0.11;
+
+                if (maxChan > 190 && chromaSpread > 5) {
+                    if (target.name.includes("White") || target.name.includes("Gray")) {
+                        rDiff *= 2.5;
+                        gDiff *= 2.5;
+                        bDiff *= 2.5;
+                    }
+                }
+
+                const distance = Math.sqrt(
+                    (rDiff * rDiff * wR) + 
+                    (gDiff * gDiff * wG) + 
+                    (bDiff * bDiff * wB)
+                );
+
+                if (distance < minimumDistance) {
+                    minimumDistance = distance;
+                    closestColor = target;
+                }
+            }
+
+            let finalName = closestColor.name;
+
+            if (r > g && g > b) {
+                if (finalName.includes("Pink") || finalName.includes("Rose")) {
+                    finalName = (r > 190) ? "Beige / Khaki" : "Light Brown / Caramel";
+                }
+            } else if (r > b && b >= g) {
+                if (finalName === "Beige / Khaki" || finalName.includes("Brown") || finalName === "Orange") {
+                    finalName = "Muted Pink / Rose";
+                }
+            }
+
+            if (finalName === "Orange" && r > 130 && chromaSpread < 80) {
+                finalName = "Light Brown / Caramel";
+            }
+
+            const isDark = closestColor.isDark || finalName === "Dark Red / Maroon" || finalName === "Burnt Orange";
+            updateUI(finalName, r, g, b, isDark);
+        }
+
+        function updateUI(name, r, g, b, isDark) {
+            resultDisplay.innerText = name;
+            resultDisplay.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+            resultDisplay.style.color = isDark ? "#FFFFFF" : "#000000";
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); 
+                const utterance = new SpeechSynthesisUtterance(name);
+                utterance.rate = 1.15; 
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        scanBtn.addEventListener('click', sampleColor);
+    </script>
+</body>
+</html>
